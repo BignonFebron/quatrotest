@@ -24,7 +24,9 @@ def register(request, format='json'):
     if serializer.is_valid():
         user = serializer.save()
         if user:
-            api_key, key = APIKey.objects.create_key(name="remote-access-key")
+            u = serializer.data
+            keyname="remote-access-key"+str(u['id'])
+            api_key, key = APIKey.objects.create_key(name=keyname)
             Token.objects.get_or_create(user=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -46,9 +48,7 @@ def login(request, format='json'):
 @api_view(['GET'])
 @permission_classes((IsAuthenticated,))
 def getkeys(request):
-    #key = request.META["HTTP_X_PUBLIC_KEY"]
-    key = APIKey.objects.get(name="remote-access-key")
-    api_key = APIKey.objects.get_from_key(key)
+    api_key = APIKey.objects.get_from_key('remote-access-key')
     return Response(str(api_key))
 
 #restaurents list
