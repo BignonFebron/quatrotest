@@ -11,7 +11,6 @@ from rest_framework.decorators import api_view,permission_classes,authentication
 from django.contrib.auth.decorators import login_required
 from rest_framework.permissions import AllowAny,IsAuthenticated
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from django.views.decorators.csrf import csrf_exempt
 import coreapi
 from . import datajson
 from geopy.distance import distance,lonlat
@@ -25,6 +24,7 @@ def register(request, format='json'):
         user = serializer.save()
         if user:
             u = serializer.data
+            #creating token  for user
             Token.objects.get_or_create(user=user)
             #creating api keys for user
             apiserializer = APIKeysSerializer()
@@ -67,31 +67,15 @@ def getNearbyRestautants(request):
         return Response('Definir les headers X-Public-Key et X-Secret-Key', status=status.HTTP_401_UNAUTHORIZED)
     if not check_keys(request.headers.get('X-Public-Key'),request.headers.get('X-Secret-Key')):
         return Response('Donnees Incorrectes', status=status.HTTP_401_UNAUTHORIZED)
-    client = coreapi.Client()
-    schema = client.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
-    data = request.data
-    location = (data['lat'],data['lng'])
-    radius = 3000
-    placetype = 'restaurant'
-    key = ''
-    params = {"location": location, "radius": radius,"type":placetype,"key":key}
-    #result = client.action(schema, [], params)
-    results = datajson.data['results']
+    results = getRestaurentsFromGoogleAPI(request.data)
     toreturn = []
     for place in results:
         obj = {}
         obj['location'] = place['geometry']['location']
         obj['name'] = place['name']
         obj['place_id'] = place['place_id']
-        ecart = distance(
-            lonlat(
-            *(data['lng'],data['lat'])
-         ),
-         lonlat(
-            *(place['geometry']['location']['lng'],place['geometry']['location']['lat'])
-         )
-        )
-        obj['distance'] = ecart.miles
+        ecart = distanceBetweenTworestaurents(request.data,place)
+        obj['distance'] = ecart
         toreturn.append(obj)
     return Response(toreturn)
 
@@ -101,3 +85,25 @@ def check_keys(public_key,private_key):
         return True
     except :
         return False
+def getRestaurentsFromGoogleAPI(data):
+    client = coreapi.Client()
+    schema = client.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json')
+    location = (data['lat'],data['lng'])
+    radius = 3000
+    placetype = 'restaurant'
+    key = ''
+    params = {"location": location, "radius": radius,"type":placetype,"key":key}
+    #result = client.action(schema, [], params)
+    results = datajson.data['results']
+    return results
+
+def distanceBetweenTworestaurents(data,place):
+    dist = distance(
+            lonlat(
+            *(data['lng'],data['lat'])
+         ),
+         lonlat(
+            *(place['geometry']['location']['lng'],place['geometry']['location']['lat'])
+         )
+        )
+    return dist.miles
