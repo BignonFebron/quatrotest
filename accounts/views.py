@@ -19,16 +19,15 @@ from geopy.distance import distance,lonlat
 @api_view(['POST'])
 @permission_classes((AllowAny,))
 def register(request, format='json'):
+    data=request.data
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
-        user = serializer.save()
+        user = User.objects.create_user(username=data['username'],email=data['email'],
+        password=data['password'])
         if user:
-            u = serializer.data
-            #creating token  for user
             Token.objects.get_or_create(user=user)
-            #creating api keys for user
             apiserializer = APIKeysSerializer()
-            keys = apiserializer.create(u['id'])
+            keys = apiserializer.create(user.id)
             if not keys:
                 return Response('Server Error',status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
