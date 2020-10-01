@@ -53,7 +53,6 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'rest_framework',
     'rest_framework.authtoken',
-    'rest_framework_api_key',
 ]
 
 MIDDLEWARE = [
@@ -69,7 +68,6 @@ MIDDLEWARE = [
 REST_FRAMEWORK = {
      'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
-        #'rest_framework_api_key.permissions.HasAPIKey'
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
